@@ -1,114 +1,53 @@
 #include <iostream>
-#include <vector>
-#include <thread>
-#include <mutex>
-#include <queue>
-#include <condition_variable>
+#include <memory>
+#include <Windows.h>
+#pragma execution_character_set("utf-8")
 
-#include "http_utils.h"
-#include <functional>
+#include "../include/parcer_INI.h"
+#include "../include/search_engine_DB.h"
 
-
-std::mutex mtx;
-std::condition_variable cv;
-std::queue<std::function<void()>> tasks;
-bool exitThreadPool = false;
-
-
-void threadPoolWorker() {
-	std::unique_lock<std::mutex> lock(mtx);
-	while (!exitThreadPool || !tasks.empty()) {
-		if (tasks.empty()) {
-			cv.wait(lock);
-		}
-		else {
-			auto task = tasks.front();
-			tasks.pop();
-			lock.unlock();
-			task();
-			lock.lock();
-		}
-	}
-}
-void parseLink(const Link& link, int depth)
-{
-	try {
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-		std::string html = getHtmlContent(link);
-
-		if (html.size() == 0)
-		{
-			std::cout << "Failed to get HTML Content" << std::endl;
-			return;
-		}
-
-		// TODO: Parse HTML code here on your own
-
-		std::cout << "html content:" << std::endl;
-		std::cout << html << std::endl;
-
-		// TODO: Collect more links from HTML code and add them to the parser like that:
-
-		std::vector<Link> links = {
-			{ProtocolType::HTTPS, "en.wikipedia.org", "/wiki/Wikipedia"},
-			{ProtocolType::HTTPS, "wikimediafoundation.org", "/"},
-		};
-
-		if (depth > 0) {
-			std::lock_guard<std::mutex> lock(mtx);
-
-			size_t count = links.size();
-			size_t index = 0;
-			for (auto& subLink : links)
-			{
-				tasks.push([subLink, depth]() { parseLink(subLink, depth - 1); });
-			}
-			cv.notify_one();
-		}
-	}
-	catch (const std::exception& e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-
-}
+#include "spider.h"
 
 int main()
 {
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+
 	try {
-		int numThreads = std::thread::hardware_concurrency();
-		std::vector<std::thread> threadPool;
+		ParcerINI config("../config.ini");
 
-		for (int i = 0; i < numThreads; ++i) {
-			threadPool.emplace_back(threadPoolWorker);
-		}
+		std::cout << "[DataBase]" << std::endl;
+		std::string host = config.getValue<std::string>("DataBase.host");
+		std::string dbPort = config.getValue<std::string>("DataBase.port");
+		std::string dbname = config.getValue<std::string>("DataBase.dbname");
+		std::string user = config.getValue<std::string>("DataBase.user");
+		std::string password = config.getValue<std::string>("DataBase.password");
+		std::string dbConnection = "host=" + host + " " + "port=" + dbPort + " " +
+			"dbname=" + dbname + " " + "user=" + user + " " + "password=" + password + " ";
+		std::cout << dbConnection << std::endl;
 
-		Link link{ ProtocolType::HTTPS, "en.wikipedia.org", "/wiki/Main_Page" };
+		std::cout << "\n[Spider]" << std::endl;
+		std::string start = config.getValue<std::string>("Spider.start");
+		std::cout << "start=" << start << std::endl;
+		int depth = config.getValue<int>("Spider.depth");
+		std::cout << "depth=" << depth << std::endl;
 
+		std::cout << "\n[HttpServer]" << std::endl;
+		std::string port = config.getValue<std::string>("HttpServer.port");
+		std::cout << "port=" << port << std::endl;
 
-		{
-			std::lock_guard<std::mutex> lock(mtx);
-			tasks.push([link]() { parseLink(link, 1); });
-			cv.notify_one();
-		}
+		auto db = std::make_unique<SeacrhEngineDB>(dbConnection);
+		
+		db->clearDB();
 
+		auto spider = std::make_unique<Spider>(std::move(db));
 
-		std::this_thread::sleep_for(std::chrono::seconds(2));
+		std::cout << "\nStart parsing links\n" << std::endl;
 
+		spider->parseLink(start, depth);
 
-		{
-			std::lock_guard<std::mutex> lock(mtx);
-			exitThreadPool = true;
-			cv.notify_all();
-		}
-
-		for (auto& t : threadPool) {
-			t.join();
-		}
 	}
-	catch (const std::exception& e)
+	catch (const std::exception& e) 
 	{
 		std::cout << e.what() << std::endl;
 	}

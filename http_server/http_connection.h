@@ -4,6 +4,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio.hpp>
+#include "../include/search_engine_DB.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -22,7 +23,6 @@ protected:
 
 	http::response<http::dynamic_body> response_;
 
-
 	net::steady_timer deadline_{
 		socket_.get_executor(), std::chrono::seconds(60)};
 
@@ -36,7 +36,10 @@ protected:
 	void checkDeadline();
 
 public:
-	HttpConnection(tcp::socket socket);
+	HttpConnection(tcp::socket socket, std::shared_ptr<SeacrhEngineDB> _db);
 	void start();
+
+private: 
+	std::shared_ptr<SeacrhEngineDB> db;
 };
 

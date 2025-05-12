@@ -68,7 +68,7 @@ std::string getHtmlContent(const Link& link)
 			}
 
 			ip::tcp::resolver resolver(ioc);
-			get_lowest_layer(stream).connect(resolver.resolve({ host, "https" }));
+			get_lowest_layer(stream).connect(resolver.resolve(host, "https"));
 			get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
 
 
@@ -83,12 +83,10 @@ std::string getHtmlContent(const Link& link)
 			http::response<http::dynamic_body> res;
 			http::read(stream, buffer, res);
 
-			if (isText(res.body().data()))
-			{
+			if (isText(res.body().data())) {
 				result = buffers_to_string(res.body().data());
 			}
-			else
-			{
+			else {
 				std::cout << "This is not a text link, bailing out..." << std::endl;
 			}
 
@@ -125,12 +123,10 @@ std::string getHtmlContent(const Link& link)
 
 			http::read(stream, buffer, res);
 
-			if (isText(res.body().data()))
-			{
+			if (isText(res.body().data())) {
 				result = buffers_to_string(res.body().data());
-			}
-			else
-			{
+			} 
+			else {
 				std::cout << "This is not a text link, bailing out..." << std::endl;
 			}
 
@@ -149,4 +145,5 @@ std::string getHtmlContent(const Link& link)
 
 	return result;
 }
+
 

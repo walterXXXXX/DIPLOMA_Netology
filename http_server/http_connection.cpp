@@ -5,6 +5,7 @@
 #include <locale>
 #include <codecvt>
 #include <iostream>
+#include <map>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -37,10 +38,8 @@ std::string convert_to_utf8(const std::string& str) {
 	return url_decoded;
 }
 
-HttpConnection::HttpConnection(tcp::socket socket)
-	: socket_(std::move(socket))
-{
-}
+HttpConnection::HttpConnection(tcp::socket socket, std::shared_ptr<SeacrhEngineDB> _db)
+	: socket_(std::move(socket)), db{ _db } {}
 
 
 void HttpConnection::start()
@@ -156,29 +155,33 @@ void HttpConnection::createResponsePost()
 			return;
 		}
 
-		// TODO: Fetch your own search results here
+		try {
+			std::vector<std::string> searchResult = db->getUrlsByFrequency(value, 10);
 
-		std::vector<std::string> searchResult = {
-			"https://en.wikipedia.org/wiki/Main_Page",
-			"https://en.wikipedia.org/wiki/Wikipedia",
-		};
+			if (searchResult.empty())
+				throw std::exception("Nothing was found\r\n");
 
-
-		response_.set(http::field::content_type, "text/html");
-		beast::ostream(response_.body())
-			<< "<html>\n"
-			<< "<head><meta charset=\"UTF-8\"><title>Search Engine</title></head>\n"
-			<< "<body>\n"
-			<< "<h1>Search Engine</h1>\n"
-			<< "<p>Response:<p>\n"
-			<< "<ul>\n";
-
-		for (const auto& url : searchResult) {
-
+			response_.set(http::field::content_type, "text/html");
 			beast::ostream(response_.body())
-				<< "<li><a href=\""
-				<< url << "\">"
-				<< url << "</a></li>";
+				<< "<html>\n"
+				<< "<head><meta charset=\"UTF-8\"><title>Search Engine</title></head>\n"
+				<< "<body>\n"
+				<< "<h1>Search Engine</h1>\n"
+				<< "<p>Response:<p>\n"
+				<< "<ul>\n";
+
+			for (const auto& url : searchResult) {
+				beast::ostream(response_.body())
+					<< "<li><a href=\""
+					<< url << "\">"
+					<< url << "</a></li>";
+			}
+		}
+		catch(const std::exception& ex) {
+			response_.result(http::status::not_found);
+			response_.set(http::field::content_type, "text/plain");
+			beast::ostream(response_.body()) << ex.what() << "\r\n";
+			return;
 		}
 
 		beast::ostream(response_.body())

@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 
 project(CppDiplomProject)
 
-
-
-# TODO: Define by your own needs:
 set(OPENSSL_ROOT_DIR "C:\\Program Files\\OpenSSL-Win64")
 
 
@@ -13,8 +10,6 @@ set(BOOST_ROOT "C:\\Boost\\boost_1_82_0\\boost")
 
 set(libpqxx_DIR "C:\\libpqxx")
 
-
-# TODO: If you are running on Windows below 10, change this:
 
 add_compile_definitions(_WIN32_WINNT=0x0A01)
 
@@ -33,14 +28,10 @@ set(PostgreSQL_ADDITIONAL_VERSIONS "15")
 add_subdirectory(${libpqxx_DIR} libpqxx-build) 
 
 
-
-
-
 # OpenSSL
 find_package(OpenSSL REQUIRED)
-
-
 
 add_subdirectory(spider)
 
 add_subdirectory(http_server)
+
