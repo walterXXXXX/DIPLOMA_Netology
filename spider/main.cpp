@@ -38,7 +38,7 @@ int main()
 
 		auto db = std::make_unique<SeacrhEngineDB>(dbConnection);
 		
-		db->clearDB();
+		//db->clearDB();
 
 		auto spider = std::make_unique<Spider>(std::move(db));
 
