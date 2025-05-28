@@ -1,6 +1,6 @@
 #pragma once 
 #include <string>
-#include <unordered_set>
+#include <regex>
 
 enum class ProtocolType
 {
@@ -10,6 +10,11 @@ enum class ProtocolType
 
 struct Link
 {
+	Link() = default;
+	Link(const std::string& linkStr);
+
+	std::string toString() const;
+
 	ProtocolType protocol;
 	std::string hostName;
 	std::string query;

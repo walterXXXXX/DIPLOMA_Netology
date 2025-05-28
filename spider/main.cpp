@@ -38,13 +38,13 @@ int main()
 
 		auto db = std::make_unique<SeacrhEngineDB>(dbConnection);
 		
-		//db->clearDB();
+		db->clearDB();
 
 		auto spider = std::make_unique<Spider>(std::move(db));
 
 		std::cout << "\nStart parsing links\n" << std::endl;
 
-		spider->parseLink(start, depth);
+		spider->parseLink(Link(start), depth);
 
 	}
 	catch (const std::exception& e) 

@@ -18,8 +18,7 @@ void Spider::parseLink(const Link& link, int depth) {
 	
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-	std::string parceURL = ((link.protocol == ProtocolType::HTTP) ? "http://" : "https://") +
-		link.hostName + link.query;
+	std::string parceURL = link.toString();
 
 	if (parceURL.length() > 2000) return;	// ограничене длины URL для совместимости с большинством браузеров
 	if (db->isExistUrl(parceURL)) return;	// пропускаем URL, который уже есть в БД
@@ -33,7 +32,7 @@ void Spider::parseLink(const Link& link, int depth) {
 
 		std::vector<Link> links;
 
-		getURLs(links, html);
+		getURLs(links, html, link);
 	
 		if (depth > 0) {
 			for (auto& subLink : links) {
@@ -63,27 +62,16 @@ void Spider::parseLink(const Link& link, int depth) {
 }
 
 void Spider::parseLink(std::string url, int depth) {
-	
-	std::regex urlRegex(R"((https?://)([^/]+)(/.*)?)");
-	std::smatch matches;
-	if (std::regex_search(url, matches, urlRegex)) {
-		Link link;
-		std::string protocol = matches[1].str();
-		if (protocol == "https://")
-			link.protocol = ProtocolType::HTTPS;
-		else
-			link.protocol = ProtocolType::HTTP;
-		link.hostName = matches[2].str();
-		link.query = matches[3].str();
-		parseLink(link, depth);
-	}
-	else {
-		throw std::exception("Uncorrect URL");
-	}
+	parseLink(Link(url), depth);
 }
 
-void Spider::getURLs(std::vector<Link>& links, const std::string& html) {
+void Spider::getURLs(std::vector<Link>& links, const std::string& html, const Link& baseLink) {
 	// возвращает в links все url ссылки, найденные в html
+	//mtxCout.lock();
+	//std::cout << "Parsing Link: " << baseLink.toString() << std::endl
+	//	<< "host: " << baseLink.hostName << std::endl << "query: " << baseLink.query << std::endl;
+	//mtxCout.unlock();
+
 	std::regex linkRegex(R"(<a href=\"(.*?)\")");
 
 	auto linksBegin = std::sregex_iterator(html.begin(), html.end(), linkRegex);
@@ -91,12 +79,30 @@ void Spider::getURLs(std::vector<Link>& links, const std::string& html) {
 
 	for (auto it = linksBegin; it != linksEnd; it++) {
 
-		std::string matchUrl = (*it).str();
+		Link newLink;
+		std::string matchUrl = (*it)[1].str();
+
+		//mtxCout.lock();
+		//std::cout << "Current link: " << matchUrl << std::endl;
+		//mtxCout.unlock();
+		
+		// обработка относительных ссылок
+		if (matchUrl._Starts_with("/")) {
+			newLink.protocol = baseLink.protocol;
+			newLink.hostName = baseLink.hostName;
+			newLink.query = matchUrl;
+			//mtxCout.lock();
+			//std::cout << "Relative url: " << newLink.toString() << std::endl;
+			//mtxCout.unlock();
+			links.push_back(newLink);
+			continue;
+		}
+		
+		// обработка абсолютных ссылок
 		std::regex urlRegex(R"((https?://)([^/]+)(/.*)?")");
 		std::smatch matches;
 
 		if (std::regex_search(matchUrl, matches, urlRegex)) {
-			Link newLink;
 			std::string protocol = matches[1].str();
 			if (protocol == "https://")
 				newLink.protocol = ProtocolType::HTTPS;
@@ -104,6 +110,9 @@ void Spider::getURLs(std::vector<Link>& links, const std::string& html) {
 				newLink.protocol = ProtocolType::HTTP;
 			newLink.hostName = matches[2].str();
 			newLink.query = matches[3].str();
+			//mtxCout.lock();
+			//std::cout << "Absolute url: " << newLink.toString() << std::endl;
+			//mtxCout.unlock();
 			links.push_back(newLink);
 		}
 	}

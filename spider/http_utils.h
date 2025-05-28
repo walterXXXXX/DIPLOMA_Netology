@@ -3,4 +3,4 @@
 #include <string>
 #include "link.h"
 
-std::string getHtmlContent(const Link& link);
+std::string getHtmlContent(const Link& link, int redirectDepth = 5);

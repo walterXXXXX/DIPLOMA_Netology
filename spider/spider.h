@@ -25,7 +25,7 @@ public:
 	void parseLink(std::string url, int depth);
 
 private:
-	void getURLs(std::vector<Link>& links, const std::string& html);
+	void getURLs(std::vector<Link>& links, const std::string& html, const Link& baseLink);
 	void clearHtml(std::string& html);
 	void parseToDB(const std::string& text, const std::string url);
 

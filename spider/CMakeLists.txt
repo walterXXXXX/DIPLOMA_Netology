@@ -5,6 +5,7 @@ add_executable(SpiderApp
 	http_utils.h
 	http_utils.cpp
 	link.h
+	link.cpp
 	../include/parcer_INI.h
 	../include/parcer_INI.cpp
 	../include/thread_pool.h
@@ -13,7 +14,7 @@ add_executable(SpiderApp
 	../include/search_engine_DB.cpp
 	spider.h
 	spider.cpp
-)
+  )
 
 target_compile_features(SpiderApp PRIVATE cxx_std_17) 
 

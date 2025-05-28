@@ -36,10 +36,13 @@ bool isText(const boost::beast::multi_buffer::const_buffers_type& b)
 	return true;
 }
 
-std::string getHtmlContent(const Link& link)
+std::string getHtmlContent(const Link& link, int redirectDepth)
 {
 
 	std::string result;
+
+	//std::cout << ((link.protocol == ProtocolType::HTTP) ? "http://" : "https://") <<
+	//	link.hostName << link.query << std::endl;
 
 	try
 	{
@@ -83,11 +86,24 @@ std::string getHtmlContent(const Link& link)
 			http::response<http::dynamic_body> res;
 			http::read(stream, buffer, res);
 
-			if (isText(res.body().data())) {
-				result = buffers_to_string(res.body().data());
+			// проверям ссылку на постоянный или временный редирект
+			if ((res.result() == http::status::moved_permanently || 
+				 res.result() == http::status::found ||
+				 res.result() == http::status::temporary_redirect ||
+				 res.result() == http::status::permanent_redirect)
+					&& redirectDepth > 0) {
+				std::string location = res[http::field::location];
+				//std::cout << "Redirect to: " << location << std::endl;
+				result = getHtmlContent(Link(location), redirectDepth - 1);
+
 			}
 			else {
-				std::cout << "This is not a text link, bailing out..." << std::endl;
+				if (isText(res.body().data())) {
+					result = buffers_to_string(res.body().data());
+				}
+				else {
+					std::cout << "This is not a text link, bailing out..." << std::endl;
+				}
 			}
 
 			beast::error_code ec;
@@ -120,14 +136,26 @@ std::string getHtmlContent(const Link& link)
 
 			http::response<http::dynamic_body> res;
 
-
 			http::read(stream, buffer, res);
 
-			if (isText(res.body().data())) {
-				result = buffers_to_string(res.body().data());
-			} 
+			// проверям ссылку на постоянный или временный редирект
+			if ((res.result() == http::status::moved_permanently ||
+				res.result() == http::status::found ||
+				res.result() == http::status::temporary_redirect ||
+				res.result() == http::status::permanent_redirect)
+				&& redirectDepth > 0) {
+				std::string location = res[http::field::location];
+				//std::cout << "Redirect to: " << location << std::endl;
+				result = getHtmlContent(Link(location), redirectDepth - 1);
+
+			}
 			else {
-				std::cout << "This is not a text link, bailing out..." << std::endl;
+				if (isText(res.body().data())) {
+					result = buffers_to_string(res.body().data());
+				}
+				else {
+					std::cout << "This is not a text link, bailing out..." << std::endl;
+				}
 			}
 
 			beast::error_code ec;
