@@ -67,10 +67,6 @@ void Spider::parseLink(std::string url, int depth) {
 
 void Spider::getURLs(std::vector<Link>& links, const std::string& html, const Link& baseLink) {
 	// возвращает в links все url ссылки, найденные в html
-	//mtxCout.lock();
-	//std::cout << "Parsing Link: " << baseLink.toString() << std::endl
-	//	<< "host: " << baseLink.hostName << std::endl << "query: " << baseLink.query << std::endl;
-	//mtxCout.unlock();
 
 	std::regex linkRegex(R"(<a href=\"(.*?)\")");
 
@@ -81,19 +77,12 @@ void Spider::getURLs(std::vector<Link>& links, const std::string& html, const Li
 
 		Link newLink;
 		std::string matchUrl = (*it)[1].str();
-
-		//mtxCout.lock();
-		//std::cout << "Current link: " << matchUrl << std::endl;
-		//mtxCout.unlock();
 		
 		// обработка относительных ссылок
 		if (matchUrl._Starts_with("/")) {
 			newLink.protocol = baseLink.protocol;
 			newLink.hostName = baseLink.hostName;
 			newLink.query = matchUrl;
-			//mtxCout.lock();
-			//std::cout << "Relative url: " << newLink.toString() << std::endl;
-			//mtxCout.unlock();
 			links.push_back(newLink);
 			continue;
 		}
@@ -110,9 +99,6 @@ void Spider::getURLs(std::vector<Link>& links, const std::string& html, const Li
 				newLink.protocol = ProtocolType::HTTP;
 			newLink.hostName = matches[2].str();
 			newLink.query = matches[3].str();
-			//mtxCout.lock();
-			//std::cout << "Absolute url: " << newLink.toString() << std::endl;
-			//mtxCout.unlock();
 			links.push_back(newLink);
 		}
 	}

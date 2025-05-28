@@ -41,9 +41,6 @@ std::string getHtmlContent(const Link& link, int redirectDepth)
 
 	std::string result;
 
-	//std::cout << ((link.protocol == ProtocolType::HTTP) ? "http://" : "https://") <<
-	//	link.hostName << link.query << std::endl;
-
 	try
 	{
 		std::string host = link.hostName;
@@ -86,14 +83,13 @@ std::string getHtmlContent(const Link& link, int redirectDepth)
 			http::response<http::dynamic_body> res;
 			http::read(stream, buffer, res);
 
-			// проверям ссылку на постоянный или временный редирект
+			// РїСЂРѕРІРµСЂСЏРј СЃСЃС‹Р»РєСѓ РЅР° РїРѕСЃС‚РѕСЏРЅРЅС‹Р№ РёР»Рё РІСЂРµРјРµРЅРЅС‹Р№ СЂРµРґРёСЂРµРєС‚
 			if ((res.result() == http::status::moved_permanently || 
 				 res.result() == http::status::found ||
 				 res.result() == http::status::temporary_redirect ||
 				 res.result() == http::status::permanent_redirect)
 					&& redirectDepth > 0) {
 				std::string location = res[http::field::location];
-				//std::cout << "Redirect to: " << location << std::endl;
 				result = getHtmlContent(Link(location), redirectDepth - 1);
 
 			}
@@ -138,14 +134,13 @@ std::string getHtmlContent(const Link& link, int redirectDepth)
 
 			http::read(stream, buffer, res);
 
-			// проверям ссылку на постоянный или временный редирект
+			// РїСЂРѕРІРµСЂСЏРј СЃСЃС‹Р»РєСѓ РЅР° РїРѕСЃС‚РѕСЏРЅРЅС‹Р№ РёР»Рё РІСЂРµРјРµРЅРЅС‹Р№ СЂРµРґРёСЂРµРєС‚
 			if ((res.result() == http::status::moved_permanently ||
 				res.result() == http::status::found ||
 				res.result() == http::status::temporary_redirect ||
 				res.result() == http::status::permanent_redirect)
 				&& redirectDepth > 0) {
 				std::string location = res[http::field::location];
-				//std::cout << "Redirect to: " << location << std::endl;
 				result = getHtmlContent(Link(location), redirectDepth - 1);
 
 			}
